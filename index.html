@@ -1,0 +1,1795 @@
+<!doctype HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aviator Predictor</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        
+        body {
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            touch-action: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+        }
+
+        /* App Container - Fixed 400px Width */
+        .app-container {
+            width: 100%;
+            max-width: 400px;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 9999;
+        }
+        
+        .loading-logo {
+            width: 100px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        .loading-bar-container {
+            width: 80%;
+            max-width: 250px;
+            height: 6px;
+            background-color: #333;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .loading-bar {
+            height: 100%;
+            width: 0;
+            background-color: #ff4500;
+            animation: load 2.5s ease-in-out forwards;
+        }
+
+        @keyframes load {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+
+        /* Login Page - আগের মতই থাকবে */
+        #loginPage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .login-container {
+            background-color: #111;
+            padding: 15px;
+            border-radius: 0;
+            box-shadow: none;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            position: relative;
+            /* UPDATED: Increased padding-top for better layout */
+            padding-top: 90px; 
+            overflow-y: auto;
+        }
+
+        .logo {
+            margin-bottom: 20px;
+        }
+
+        .logo img {
+            width: 90px;
+            height: auto;
+        }
+
+        .login-title {
+            color: #ff4500;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .login-subtitle {
+            color: #aaa;
+            font-size: 0.75em;
+            margin-bottom: 20px;
+        }
+
+        .login-form {
+            width: 100%;
+            max-width: 280px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .input-group label {
+            display: none;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: border-color 0.3s;
+            background-color: #222;
+            color: #fff;
+            height: 45px;
+        }
+
+        .input-group input::placeholder {
+            color: #888;
+            font-size: 0.9em;
+        }
+
+        .input-group input:focus {
+            border-color: #ff4500;
+            outline: none;
+        }
+
+        .login-button {
+            background-color: #ff4500;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-top: 8px;
+            height: 38px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-button:active {
+            transform: scale(0.95);
+            background-color: #e03e00;
+            box-shadow: 0 0 10px rgba(255, 69, 0, 0.8);
+        }
+
+        .login-button:disabled {
+            background-color: #666;
+            cursor: not-allowed;
+        }
+
+        .button-loading {
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .button-loading .spinner {
+            width: 18px;
+            height: 18px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #ff0000;
+            font-size: 0.75em;
+            margin-top: 8px;
+            display: none;
+        }
+
+        /* UPDATED: Changed to space-between for left/right alignment */
+        .login-footer {
+            position: relative;
+            margin-top: 12px;
+            width: 100%;
+            max-width: 280px;
+            display: flex;
+            justify-content: space-between; /* Place items on opposite ends */
+            align-items: center;
+        }
+
+        .footer-icon {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            text-decoration: none;
+            font-size: 0.7em;
+            transition: all 0.3s;
+            padding: 5px 10px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            color: #aaa; /* Default color for text */
+            gap: 4px;
+        }
+        
+        /* Specific style for Demo button icon */
+        #demoAccessLink i {
+             color: #007bff; /* Blue color for Demo icon */
+        }
+        
+        /* Specific style for Help Line icon */
+        #helpLineLink i {
+            color: #28a745; 
+        }
+
+        .footer-icon i {
+            font-size: 1em;
+        }
+
+        .footer-icon span {
+            font-size: 0.85em;
+        }
+
+        /* CHANGE: Icon position adjusted from right: 15px to 30px */
+        .about-us-icon {
+            position: absolute;
+            top: 35px; 
+            right: 30px; /* MOVED SLIGHTLY LEFT */
+            color: #ff4500;
+            font-size: 1em;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        /* Login Loading Overlay - This overlay is now effectively hidden via JS change */
+        .login-loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1001;
+            color: white;
+        }
+
+        .login-loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid transparent;
+            border-top: 4px solid #ff4500;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        .login-loading-text {
+            font-size: 0.9em;
+            color: #fff;
+        }
+
+        /* Main Application - শুধুমাত্র এটার ব্যাকগ্রাউন্ড সাদা করা হয়েছে */
+        #mainApp {
+            display: none;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #ffffff; /* সাদা ব্যাকগ্রাউন্ড */
+        }
+
+        /* Header - Original Design with Exact Border Radius */
+        header {
+            background-color: #ff4500;
+            color: white;
+            height: 80px;
+            width: 100%;
+            text-align: center;
+            border-radius: 0 0 200px 30px; /* Exact original border radius */
+            font-size: 0.85em;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0;
+            z-index: 1000;
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            height: calc(100% - 130px); /* MODIFIED: height calculation reduced to 130px */
+            margin-top: 90px; /* MODIFIED: Adjusted margin for header to move content up (from 110px to 90px) */
+            position: relative;
+            padding: 0 15px;
+        }
+
+        .logo-small {
+            margin-bottom: 15px;
+            margin-top: 5px;
+        }
+
+        .logo-small img {
+            width: 120px; /* MODIFIED: Increased logo size (from 100px) */
+            height: auto;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+        }
+
+        .circle-container {
+            margin: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            transform: translateY(-5px);
+        }
+
+        .circle {
+            width: 240px; /* MODIFIED: Increased circle size (from 200px) */
+            height: 240px; /* MODIFIED: Increased circle size (from 200px) */
+            border-radius: 50%;
+            border: 6px solid #ff4500;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            box-shadow: 
+                0 0 25px rgba(255, 69, 0, 0.5),
+                inset 0 0 20px rgba(255, 255, 255, 0.1);
+            background: radial-gradient(circle at center, #ffffff, #f0f0f0);
+            z-index: 3;
+            overflow: hidden;
+        }
+        
+        /* FIX: সেন্টারিং নিশ্চিত করা হয়েছে */
+        .circle-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden; 
+            z-index: 5; 
+            position: relative; 
+        }
+
+        .message-text {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 5px;
+        }
+        
+        .message-text p {
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.4;
+            margin: 0;
+            font-size: 0.9em;
+            max-height: 100%;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 6; 
+            -webkit-box-orient: vertical;
+        }
+        
+        /* FIX: Multiplier এর জন্য সেন্টারিং ঠিক করা হয়েছে */
+        .multiplier {
+            font-size: 2.8em; /* MODIFIED: Adjusted font size for bigger circle (from 2.2em) */
+            font-weight: bold;
+            color: #ff4500;
+            z-index: 4;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            width: 100%; 
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        /* FIX: Loading এর জন্য সেন্টারিং ঠিক করা হয়েছে */
+        .loading {
+            color: #666;
+            font-size: 1.8em; /* MODIFIED: Adjusted font size for bigger circle (from 1.4em) */
+            font-weight: bold;
+            width: 100%; 
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .circle-inner {
+            position: absolute;
+            border-radius: 50%;
+            z-index: 2;
+            pointer-events: none;
+            /* BLUR EFFECT: Added transition for smooth effect */
+            transition: filter 0.5s ease-out, opacity 0.5s ease-out, animation 0.5s linear; /* Added animation to transition */
+        }
+        
+        /* BLUR EFFECT: New class to apply blur */
+        .circle-inner.blurred {
+            filter: blur(2px) brightness(0.8);
+        }
+        
+        /* --- NEW: Circle Colors and Speed Animation Classes --- */
+        
+        /* 1. Animation Definitions */
+        @keyframes rotateRight {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes rotateLeft {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+
+        /* 2. Speed Classes (Used by JS) */
+        .slow-spin-right {
+            animation: rotateRight 15s linear infinite; /* Slower speed */
+        }
+        .slow-spin-left {
+            animation: rotateLeft 20s linear infinite; /* Slower speed */
+        }
+        .fast-spin-right {
+            animation: rotateRight 3s linear infinite; /* Faster speed */
+        }
+        .fast-spin-left {
+            animation: rotateLeft 4s linear infinite; /* Faster speed */
+        }
+
+        /* 3. Base Circle Styles with New Red/Orange Colors */
+        .circle-right {
+            width: 220px; /* MODIFIED: Adjusted inner circle size (from 180px) */
+            height: 220px; /* MODIFIED: Adjusted inner circle size (from 180px) */
+            border: 5px dashed #ff6347; /* Red/Tomato */
+            clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+            opacity: 0.7;
+        }
+        
+        .circle-left {
+            width: 200px; /* MODIFIED: Adjusted inner circle size (from 160px) */
+            height: 200px; /* MODIFIED: Adjusted inner circle size (from 160px) */
+            border: 5px dashed #e03e00; /* Dark Red */
+            clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+            opacity: 0.7;
+        }
+        
+        .circle-left-3 {
+            width: 180px; /* MODIFIED: Adjusted inner circle size (from 140px) */
+            height: 180px; /* MODIFIED: Adjusted inner circle size (from 140px) */
+            border: 5px dashed #ff4500; /* Main Orange/Red */
+            opacity: 0.7;
+        }
+        /* --- END Circle Styles --- */
+
+
+        .next-button {
+            background: linear-gradient(135deg, #ff4500, #ff6b35);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 1em;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(255, 69, 0, 0.4);
+            font-weight: bold;
+            margin-top: 15px;
+            transition: all 0.3s ease-in-out;
+            position: relative;
+            min-width: 120px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .next-button:active {
+            transform: scale(0.96);
+            box-shadow: 0 3px 8px rgba(255, 69, 0, 0.4);
+        }
+
+        .next-button:disabled {
+            background: linear-gradient(135deg, #cc3700, #e03e00);
+            cursor: not-allowed;
+            transform: scale(0.96);
+            /* Optional: Add a visual lock effect */
+            filter: grayscale(50%); 
+        }
+
+        .button-text {
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        .countdown-text {
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        /* Footer - Fixed Position */
+        footer {
+            position: fixed; /* ফিক্সড করা হয়েছে */
+            bottom: 0;
+            width: 100%;
+            max-width: 400px; /* কন্টেইনারের সাথে মিল রাখা */
+            background-color: #ff4500;
+            padding: 8px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .nav-home, .nav-chat {
+            font-size: 1.3em;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+
+        .nav-home:active, .nav-chat:active {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .timer {
+            font-size: 1em; /* ফন্ট সাইজ সামান্য ছোট করা হয়েছে */
+            font-weight: bold;
+            color: white;
+            min-width: 90px; /* আরেকটু বেশি জায়গা */
+            text-align: center;
+            white-space: nowrap; /* Prevent timer/demo text from wrapping */
+        }
+
+        /* About Us Page */
+        #aboutUsPage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: #1a1a2e;
+            color: #f0f0f0;
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .about-us-header {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #1f1c2c, #928dab);
+            color: white;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .about-us-header h2 {
+            font-size: 1.3em;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .about-us-content {
+            width: 100%;
+            max-width: 100%;
+            text-align: center;
+        }
+        
+        .about-us-messages {
+            padding: 15px;
+            background-color: #2c2c3e;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            text-align: left;
+            margin-bottom: 15px;
+        }
+        
+        .about-us-messages p {
+            font-size: 0.85em;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            color: #f0f0f0;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            background-color: #FFD700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin-top: 15px;
+        }
+        
+        .back-btn:active {
+            background-color: #e6b800;
+            transform: scale(0.98);
+        }
+
+        /* Helpline Menu */
+        .helpline-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .helpline-menu-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 280px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .helpline-menu-title {
+            color: #ff4500;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .helpline-option {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff4500, #ff6b35);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+            font-size: 0.85em;
+        }
+
+        .helpline-option:active {
+            transform: translateY(-2px);
+        }
+
+        .helpline-close {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            background-color: #666;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            margin-top: 8px;
+            font-size: 0.85em;
+        }
+
+        /* Notification */
+        .notification {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            max-width: 280px;
+            text-align: center;
+            font-size: 0.8em;
+        }
+
+        /* For larger screens - center the 400px container */
+        @media only screen and (min-width: 401px) {
+            body {
+                background: linear-gradient(135deg, #1a1a2e, #16213e);
+            }
+            
+            .app-container {
+                border-radius: 0;
+                height: 100vh;
+            }
+        }
+
+        /* For very small screens */
+        @media only screen and (max-width: 350px) {
+            .circle {
+                width: 220px; /* MODIFIED (from 180px) */
+                height: 220px; /* MODIFIED (from 180px) */
+            }
+            
+            .circle-right {
+                width: 200px; /* MODIFIED (from 160px) */
+                height: 200px; /* MODIFIED (from 160px) */
+            }
+            
+            .circle-left {
+                width: 180px; /* MODIFIED (from 140px) */
+                height: 180px; /* MODIFIED (from 140px) */
+            }
+            
+            .circle-left-3 {
+                width: 160px; /* MODIFIED (from 120px) */
+                height: 160px; /* MODIFIED (from 120px) */
+            }
+            
+            .multiplier {
+                font-size: 2.2em; /* MODIFIED (from 1.8em) */
+            }
+            
+            .logo-small img {
+                width: 110px; /* MODIFIED (from 90px) */
+            }
+            
+            .logo img {
+                width: 80px;
+            }
+            
+            header {
+                height: 70px;
+                font-size: 0.8em;
+            }
+            
+            main {
+                margin-top: 80px; /* MODIFIED: Adjusted margin for very small screens (from 100px to 80px) */
+                height: calc(100% - 120px); /* MODIFIED: Adjusted height for very small screens (from 140px to 120px) */
+            }
+            
+            footer {
+                padding: 6px 0;
+            }
+            
+            .nav-home, .nav-chat {
+                font-size: 1.2em;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .timer {
+                font-size: 0.8em;
+                min-width: 80px;
+            }
+            
+            .login-container {
+                padding-top: 80px; /* Adjusting for very small screens */
+            }
+            
+            .about-us-icon {
+                 top: 25px; 
+                 right: 12px;
+            }
+        }
+
+        @media only screen and (max-height: 600px) {
+            .login-container {
+                padding-top: 50px;
+            }
+            
+            .logo {
+                margin-bottom: 15px;
+            }
+            
+            .logo img {
+                width: 70px;
+            }
+            
+            .login-title {
+                font-size: 1em;
+                margin-bottom: 5px;
+            }
+            
+            .login-subtitle {
+                font-size: 0.65em;
+                margin-bottom: 15px;
+            }
+            
+            main {
+                height: calc(100% - 120px); /* MODIFIED: Adjusted height for small height screens (from 140px to 120px) */
+                margin-top: 80px; /* MODIFIED: Adjusted margin for small height screens (from 100px to 80px) */
+            }
+            
+            header {
+                height: 70px;
+            }
+            
+            .circle {
+                width: 210px; /* MODIFIED (from 170px) */
+                height: 210px; /* MODIFIED (from 170px) */
+            }
+            
+            .circle-right {
+                width: 190px; /* MODIFIED (from 150px) */
+                height: 190px; /* MODIFIED (from 150px) */
+            }
+            
+            .circle-left {
+                width: 170px; /* MODIFIED (from 130px) */
+                height: 170px; /* MODIFIED (from 130px) */
+            }
+            
+            .circle-left-3 {
+                width: 150px; /* MODIFIED (from 110px) */
+                height: 150px; /* MODIFIED (from 110px) */
+            }
+            
+            .multiplier {
+                font-size: 2.2em; /* MODIFIED (from 1.8em) */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div id="loadingScreen">
+            <img class="loading-logo" src="https://bestcasinosonline.ng/IMG/webp/thumbs/aviator.webp" alt="Loading Logo">
+            <div class="loading-bar-container">
+                <div class="loading-bar"></div>
+            </div>
+        </div>
+
+        <div id="loginPage">
+            <div class="login-loading" id="loginLoading">
+                <div class="login-loading-spinner"></div>
+                <div class="login-loading-text">Verifying Access Key...</div>
+            </div>
+
+            <div class="login-container">
+                <i class="fas fa-info-circle about-us-icon" id="aboutUsIcon"></i>
+            
+                <div class="logo">
+                    <img src="https://bestcasinosonline.ng/IMG/webp/thumbs/aviator.webp" alt="Aviator Logo">
+                </div>
+                
+                <h2 class="login-title">Aviator Predictor</h2>
+                <p class="login-subtitle">Enter your access key to continue</p>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="input-group">
+                        <label for="accessKey" style="display: none;">Access Key</label>
+                        <input type="text" id="accessKey" placeholder="Access Key" required>
+                    </div>
+                    
+                    <div class="error-message" id="errorMessage">
+                        Invalid or expired access key!
+                    </div>
+                    
+                    <button type="submit" class="login-button" id="loginButton">
+                        <span class="button-text">
+                            <i class="fas fa-sign-in-alt"></i> Access
+                        </span>
+                        <span class="button-loading" id="buttonLoading">
+                            <div class="spinner"></div>
+                            Verifying...
+                        </span>
+                    </button>
+                </form>
+
+                <div class="login-footer">
+                    <a href="#" class="footer-icon" id="demoAccessLink">
+                        <i class="fas fa-rocket"></i>
+                        <span>Demo Access</span>
+                    </a>
+                    <a href="#" class="footer-icon" id="helpLineLink">
+                        <i class="fas fa-headset"></i>
+                        <span>Help Line</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div id="aboutUsPage">
+            <div class="about-us-header">
+                <h2>Aviator Predictor</h2>
+            </div>
+            <div class="about-us-content">
+                <div class="about-us-messages" id="aboutUsMessages">
+                    </div>
+                <button id="backBtn" class="back-btn">Go Back</button>
+            </div>
+        </div>
+
+        <div id="mainApp">
+            <header>
+                <h1>Aviator Predictor</h1>
+            </header>
+
+            <main>
+                <div class="logo-small">
+                    <img src="https://bestcasinosonline.ng/IMG/webp/thumbs/aviator.webp" alt="Aviator Logo">
+                </div>
+                
+                <div class="circle-container">
+                    <div class="circle">
+                        <div class="circle-inner circle-right"></div>
+                        <div class="circle-inner circle-left"></div>
+                        <div class="circle-inner circle-left-3"></div>
+                        <div id="circleDisplay" class="circle-content">
+                            <div class="message-text">
+                                <p></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="next-button" id="nextButton">
+                    <span class="button-text">Next</span>
+                    <span class="countdown-text" style="display: none;"></span>
+                </button>
+            </main>
+
+            <footer>
+                <div class="nav-buttons">
+                    <a href="#" class="nav-home" onclick="logout()">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    <div class="timer" id="timerDisplay">00:00:00</div>
+                    <a href="#" class="nav-chat" id="helpLineButton">
+                        <i class="fas fa-comments"></i>
+                    </a>
+                </div>
+            </footer>
+        </div>
+
+        <div class="helpline-menu" id="helplineMenu">
+            <div class="helpline-menu-content">
+                <h3 class="helpline-menu-title">Help Line</h3>
+                <a href="#" class="helpline-option" id="whatsappOption">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </a>
+                <a href="#" class="helpline-option" id="telegramOption">
+                    <i class="fab fa-telegram"></i> Telegram
+                </a>
+                <a href="#" class="helpline-option" id="messengerOption">
+                    <i class="fas fa-phone"></i> Call
+                </a>
+                <button class="helpline-close" id="helplineClose">Close</button>
+            </div>
+        </div>
+
+        <div class="notification" id="notification"></div>
+    </div>
+
+<script>
+    // Firebase Configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyDbjKG5kTZXXYd6ZfG3caa1cQE0r6zVHgM",
+        authDomain: "admin-15b0b.firebaseapp.com",
+        databaseURL: "https://admin-15b0b-default-rtdb.firebaseio.com",
+        projectId: "admin-15b0b",
+        storageBucket: "admin-15b0b.firebasestorage.app",
+        messagingSenderId: "362588279451",
+        appId: "1:362588279451:web:66d5d72b80d6a471826c3e",
+        measurementId: "G-4FD1HFPZT2"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Global variables
+    let currentKey = null;
+    let keyExpiry = null;
+    let timerInterval = null;
+    let countdownInterval = null;
+    let remainingTime = 0;
+    
+    let demoModeActive = false;
+    let demoClicksRemaining = 0;
+    const MAX_DEMO_CLICKS = 10;
+
+    // Prediction settings from admin panel
+    let predictionSettings = {
+        method: 'message',
+        customResults: ["1.25x", "1.50x", "2.00x", "3.00x"],
+        customMessages: ["Wait for signal", "Place your bet", "Cash out now", "High multiplier coming"],
+        apiKey: '',
+        deepseekApiKey: '',
+        pattern: 'sequential'
+    };
+
+    let settings = {
+        autoPredictionsEnabled: true,
+        countdownEnabled: true,
+        predictionInterval: 30,
+        countdownDuration: 5 
+    };
+
+    let helplineSettings = {
+        login: {
+            whatsapp: { enabled: true, link: "#" },
+            telegram: { enabled: true, link: "#" },
+            phone: { enabled: true, number: "" }
+        },
+        home: {
+            whatsapp: { enabled: true, link: "#" },
+            telegram: { enabled: true, link: "#" },
+            phone: { enabled: true, number: "" }
+        }
+    };
+    let aboutUsText = "Welcome to Aviator Predictor!";
+
+    // DOM elements
+    const loadingScreen = document.getElementById('loadingScreen');
+    const loginPage = document.getElementById('loginPage');
+    const mainApp = document.getElementById('mainApp');
+    const aboutUsPage = document.getElementById('aboutUsPage');
+    const loginForm = document.getElementById('loginForm');
+    const errorMessage = document.getElementById('errorMessage');
+    const circleDisplay = document.getElementById('circleDisplay');
+    const nextButton = document.getElementById('nextButton');
+    const timerDisplay = document.getElementById('timerDisplay');
+    const helplineMenu = document.getElementById('helplineMenu');
+    const notification = document.getElementById('notification');
+    const aboutUsIcon = document.getElementById('aboutUsIcon');
+    const backBtn = document.getElementById('backBtn');
+    const aboutUsMessages = document.getElementById('aboutUsMessages');
+    const helpLineLink = document.getElementById('helpLineLink'); 
+    const demoAccessLink = document.getElementById('demoAccessLink');
+    const helpLineButton = document.getElementById('helpLineButton'); 
+    const helplineClose = document.getElementById('helplineClose');
+    
+    const loginButton = document.getElementById('loginButton');
+    const buttonLoading = document.getElementById('buttonLoading');
+    const loginLoading = document.getElementById('loginLoading'); // The full overlay element
+    const accessKeyInput = document.getElementById('accessKey'); // New reference for input
+    
+    const whatsappOption = document.getElementById('whatsappOption');
+    const telegramOption = document.getElementById('telegramOption');
+    const phoneOption = document.getElementById('messengerOption');
+    
+    const circleRight = document.querySelector('.circle-right');
+    const circleLeft = document.querySelector('.circle-left');
+    const circleLeft3 = document.querySelector('.circle-left-3');
+
+    // Helper function to apply/remove blur
+    function toggleCircleBlur(isBlurred) {
+        [circleRight, circleLeft, circleLeft3].forEach(el => {
+            if (isBlurred) {
+                el.classList.add('blurred');
+            } else {
+                el.classList.remove('blurred');
+            }
+        });
+    }
+    
+    // Helper function to control circle animation speed
+    function toggleCircleAnimation(isFast) {
+        const rightElements = [circleRight, circleLeft3];
+        const leftElements = [circleLeft];
+        
+        rightElements.forEach(el => {
+            el.classList.remove('slow-spin-right', 'fast-spin-right');
+        });
+        leftElements.forEach(el => {
+            el.classList.remove('slow-spin-left', 'fast-spin-left');
+        });
+
+        if (isFast) {
+            rightElements.forEach(el => {
+                el.classList.add('fast-spin-right');
+            });
+            leftElements.forEach(el => {
+                el.classList.add('fast-spin-left');
+            });
+        } else {
+            rightElements.forEach(el => {
+                el.classList.add('slow-spin-right');
+            });
+            leftElements.forEach(el => {
+                el.classList.add('slow-spin-left');
+            });
+        }
+    }
+
+    // Show login loading - Only button loading is visible
+    function showLoginLoading() {
+        loginButton.disabled = true;
+        document.querySelector('.button-text').style.display = 'none';
+        buttonLoading.style.display = 'flex';
+        // loginLoading.style.display = 'flex'; // Full overlay is now hidden as requested
+    }
+
+    // Hide login loading
+    function hideLoginLoading() {
+        loginButton.disabled = false;
+        document.querySelector('.button-text').style.display = 'block';
+        buttonLoading.style.display = 'none';
+        loginLoading.style.display = 'none';
+    }
+
+    // New helper function to show login error
+    function showLoginError(timing) {
+        accessKeyInput.style.borderColor = '#ff0000'; // Red border
+        errorMessage.style.display = 'block';
+        
+        setTimeout(() => {
+            errorMessage.style.display = 'none';
+            accessKeyInput.style.borderColor = '#333'; // Reset border
+        }, timing === 'immediate' ? 1500 : 3000); // Shorter duration for immediate errors
+    }
+
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+            loginPage.style.display = 'flex';
+        }, 3000);
+
+        setupEventListeners();
+        loadSettings();
+        
+        toggleCircleBlur(false);
+        toggleCircleAnimation(false);
+    });
+
+    // Set up event listeners
+    function setupEventListeners() {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleLogin();
+        });
+
+        demoAccessLink.addEventListener('click', function(e) { 
+            e.preventDefault();
+            handleDemoAccess();
+        });
+
+        nextButton.addEventListener('click', function() {
+            if (!nextButton.disabled) {
+                generatePrediction();
+            }
+        });
+
+        aboutUsIcon.addEventListener('click', function() {
+            showAboutUsPage();
+        });
+
+        backBtn.addEventListener('click', function() {
+            aboutUsPage.style.display = 'none';
+            loginPage.style.display = 'flex';
+        });
+
+        helpLineLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            showHelplineMenu('login');
+        });
+
+        helpLineButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            showHelplineMenu('home');
+        });
+
+        helplineClose.addEventListener('click', function() {
+            helplineMenu.style.display = 'none';
+        });
+
+        whatsappOption.addEventListener('click', preventDefaultIfDisabled);
+        telegramOption.addEventListener('click', preventDefaultIfDisabled);
+        phoneOption.addEventListener('click', preventDefaultIfDisabled); 
+    }
+
+    function preventDefaultIfDisabled(e) {
+        if (e.currentTarget.getAttribute('href') === '#') {
+            e.preventDefault();
+            showNotification('This support channel is currently disabled by the administrator.');
+        }
+    }
+
+    // Handle user login with key - MODIFIED FOR ERROR/LOADING CONTROL
+    function handleLogin() {
+        const accessKey = accessKeyInput.value.trim();
+        const defaultErrorMessage = 'Invalid or expired access key!';
+        errorMessage.textContent = defaultErrorMessage; 
+        accessKeyInput.style.borderColor = '#333'; // Reset border color
+
+        // Initial validation: Check if key is entered
+        if (accessKey.length === 0) {
+            errorMessage.textContent = 'Please enter your access key.';
+            showLoginError('immediate');
+            return;
+        }
+
+        // Length validation
+        if (accessKey.length > 8) {
+            errorMessage.textContent = 'Access key must be 8 characters or less.'; 
+            showLoginError('immediate');
+            return;
+        }
+
+        // Show loading only when starting Firebase check
+        showLoginLoading(); 
+
+        database.ref('keys').once('value').then(snapshot => {
+            const keys = snapshot.val();
+            let keyFound = false;
+            let expired = false;
+
+            if (keys) {
+                Object.keys(keys).forEach(keyId => {
+                    const keyData = keys[keyId];
+                    if (keyData.key === accessKey) {
+                        const now = new Date().getTime();
+                        
+                        if (keyData.expiry > now) { 
+                            currentKey = keyData;
+                            keyExpiry = keyData.expiry;
+                            keyFound = true;
+                            demoModeActive = false;
+                            
+                            // SUCCESS PATH: Keep loading visible for a small effect
+                            setTimeout(() => {
+                                hideLoginLoading();
+                                loginPage.style.display = 'none';
+                                mainApp.style.display = 'block';
+
+                                loadPredictionSettings();
+                                startKeyTimer();
+                                toggleCircleBlur(false);
+                                toggleCircleAnimation(false);
+                            }, 500); 
+
+                        } else if (keyData.expiry <= now) {
+                            expired = true;
+                        }
+                    }
+                });
+            }
+
+            if (!keyFound) {
+                // FAILURE PATH: Hide loading immediately and show error
+                hideLoginLoading(); 
+                if (expired) {
+                    errorMessage.textContent = 'This key has expired. Please contact admin for a new key.';
+                } else {
+                    errorMessage.textContent = defaultErrorMessage;
+                }
+                showLoginError('delayed');
+            }
+        }).catch(error => {
+            // ERROR PATH: Hide loading immediately and show error
+            hideLoginLoading(); 
+            errorMessage.textContent = 'Connection error. Please try again.';
+            showLoginError('delayed');
+            console.error("Login error:", error);
+        });
+    }
+    
+    // Demo Access Function - MODIFIED: Reduced delay
+    function handleDemoAccess() {
+        clearInterval(timerInterval);
+        clearInterval(countdownInterval);
+        
+        showLoginLoading(); // Only shows button loading
+        
+        currentKey = { key: 'DEMO_KEY', expiry: 0 }; 
+        demoModeActive = true;
+        
+        const storedClicksRemaining = sessionStorage.getItem('demoClicksRemaining');
+        if (storedClicksRemaining !== null && !isNaN(parseInt(storedClicksRemaining)) && parseInt(storedClicksRemaining) <= MAX_DEMO_CLICKS) {
+            demoClicksRemaining = parseInt(storedClicksRemaining, 10);
+        } else {
+            demoClicksRemaining = MAX_DEMO_CLICKS;
+            sessionStorage.setItem('demoClicksRemaining', demoClicksRemaining);
+        }
+
+        setTimeout(() => {
+            hideLoginLoading();
+            loginPage.style.display = 'none';
+            mainApp.style.display = 'block';
+
+            loadPredictionSettings();
+            updateDemoState();
+            toggleCircleBlur(false);
+            toggleCircleAnimation(false);
+        }, 500); // Reduced delay for faster demo access
+    }
+
+    // Function to check and update demo state
+    function updateDemoState() {
+        if (demoModeActive) {
+            timerDisplay.textContent = `DEMO: ${demoClicksRemaining}/${MAX_DEMO_CLICKS} left`;
+            
+            if (demoClicksRemaining <= 0) {
+                nextButton.disabled = true;
+                nextButton.querySelector('.button-text').textContent = 'Locked'; 
+                nextButton.querySelector('.button-text').style.display = 'block'; 
+                nextButton.querySelector('.countdown-text').style.display = 'none'; 
+                
+            } else {
+                nextButton.disabled = false;
+                if (!nextButton.querySelector('.countdown-text').style.display || nextButton.querySelector('.countdown-text').style.display === 'none') {
+                    nextButton.querySelector('.button-text').textContent = 'Next';
+                }
+            }
+        }
+    }
+
+    // Load prediction settings from Firebase
+    function loadPredictionSettings() {
+        database.ref('predictionSettings').on('value', (snapshot) => {
+            const settings = snapshot.val();
+            if (settings) {
+                predictionSettings.method = settings.method || 'message';
+                predictionSettings.customResults = Array.isArray(settings.customResults) ? settings.customResults : [];
+                predictionSettings.customMessages = Array.isArray(settings.customMessages) ? settings.customMessages : [];
+                predictionSettings.apiKey = settings.apiKey || '';
+                predictionSettings.deepseekApiKey = settings.deepseekApiKey || '';
+                predictionSettings.pattern = settings.pattern || 'sequential';
+                
+                console.log('✅ Prediction settings loaded:', predictionSettings);
+                console.log('✅ Current method:', predictionSettings.method);
+                console.log('✅ Pattern:', predictionSettings.pattern);
+                console.log('✅ Custom messages:', predictionSettings.customMessages);
+                console.log('✅ Custom results:', predictionSettings.customResults);
+            }
+        }, (error) => {
+            console.error('❌ Error loading prediction settings:', error);
+        });
+    }
+
+    // Start key timer
+    function startKeyTimer() {
+        if (demoModeActive || !keyExpiry) {
+            timerDisplay.textContent = '00:00:00';
+            return;
+        }
+
+        clearInterval(timerInterval);
+
+        timerInterval = setInterval(() => {
+            const now = new Date().getTime();
+            remainingTime = keyExpiry - now;
+
+            if (remainingTime <= 0) {
+                clearInterval(timerInterval);
+                showNotification('Your access has expired. Please contact admin for a new key.');
+                setTimeout(() => {
+                    logout();
+                }, 3000);
+                return;
+            }
+
+            const hours = Math.floor(remainingTime / 3600000);
+            const minutes = Math.floor((remainingTime % 3600000) / 60000);
+            const seconds = Math.floor((remainingTime % 60000) / 1000);
+            
+            timerDisplay.textContent = 
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }, 1000);
+    }
+
+    // Generate prediction
+    function generatePrediction() {
+        toggleCircleBlur(false);
+        toggleCircleAnimation(true);
+        
+        if (demoModeActive) {
+            if (demoClicksRemaining <= 0) {
+                updateDemoState();
+                showNotification('**Demo Limit Reached!** You cannot make any more predictions.');
+                return;
+            }
+            demoClicksRemaining--;
+            sessionStorage.setItem('demoClicksRemaining', demoClicksRemaining);
+        }
+
+        nextButton.disabled = true;
+        nextButton.querySelector('.button-text').style.display = 'none';
+        nextButton.querySelector('.countdown-text').style.display = 'block';
+
+        let countdown = 5; 
+        nextButton.querySelector('.countdown-text').textContent = countdown;
+
+        circleDisplay.innerHTML = '<div class="loading">Loading...</div>';
+
+        countdownInterval = setInterval(() => {
+            countdown--;
+            nextButton.querySelector('.countdown-text').textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+
+                getPrediction().then(result => {
+                    // Check if it's a message or a multiplier
+                    const displayContent = result.includes('x') || result.includes('X') 
+                        ? `<div class="multiplier">${result}</div>` 
+                        : `<div class="message-text"><p>${result}</p></div>`;
+                        
+                    circleDisplay.innerHTML = displayContent;
+                    
+                    toggleCircleBlur(true);
+                    toggleCircleAnimation(false);
+
+                    nextButton.disabled = false;
+                    nextButton.querySelector('.button-text').style.display = 'block';
+                    nextButton.querySelector('.countdown-text').style.display = 'none';
+
+                    if (currentKey && currentKey.key !== 'DEMO_KEY') {
+                        database.ref('predictions').push({
+                            key: currentKey.key,
+                            result: result,
+                            timestamp: new Date().getTime(),
+                            method: predictionSettings.method
+                        });
+                    }
+                    
+                    if (demoModeActive) {
+                        updateDemoState(); 
+                    }
+                }).catch(error => {
+                    console.error("Prediction error:", error);
+                    const fallbackMultiplier = (Math.random() * 9 + 1).toFixed(2);
+                    circleDisplay.innerHTML = `<div class="multiplier">${fallbackMultiplier}x</div>`;
+                    
+                    toggleCircleBlur(true);
+                    toggleCircleAnimation(false);
+                    nextButton.disabled = false;
+                    nextButton.querySelector('.button-text').style.display = 'block';
+                    nextButton.querySelector('.countdown-text').style.display = 'none';
+                });
+            }
+        }, 1000);
+    }
+
+    // Get prediction based on selected method - MODIFIED FOR DEMO RANDOM
+    function getPrediction() {
+        return new Promise((resolve, reject) => {
+            
+            // --- NEW: Demo Mode Check for Random Results ---
+            if (demoModeActive) {
+                // Generates a random multiplier between 1.01x and 9.99x
+                const randomMultiplier = (Math.random() * 8.99 + 1.01).toFixed(2) + 'x'; 
+                console.log('✅ Demo Mode: Generated random result:', randomMultiplier);
+                resolve(randomMultiplier);
+                return; 
+            }
+            // --- END Demo Mode Check ---
+            
+            const method = predictionSettings.method || 'message';
+            const pattern = predictionSettings.pattern || 'sequential';
+            
+            console.log('🎯 Using prediction method:', method);
+            console.log('🔄 Using pattern:', pattern);
+            
+            try {
+                switch(method) {
+                    case 'message':
+                        if (predictionSettings.customMessages && predictionSettings.customMessages.length > 0) {
+                            const message = getNextItemSequential(predictionSettings.customMessages, 'message');
+                            console.log('✅ Selected message (sequential):', message);
+                            resolve(message);
+                        } else {
+                            console.log('⚠️ No custom messages, using fallback');
+                            resolve("1.50x");
+                        }
+                        break;
+                        
+                    case 'custom':
+                        if (predictionSettings.customResults && predictionSettings.customResults.length > 0) {
+                            let result = getNextItemSequential(predictionSettings.customResults, 'custom');
+                            
+                            // Clean and format the result
+                            result = result.trim();
+                            if (!result.includes('x') && !result.includes('X')) {
+                                result = result + 'x';
+                            }
+                            
+                            console.log('✅ Selected custom result (sequential):', result);
+                            resolve(result);
+                        } else {
+                            console.log('⚠️ No custom results, using fallback');
+                            const fallbackResult = (Math.random() * 9 + 1).toFixed(2) + "x";
+                            resolve(fallbackResult);
+                        }
+                        break;
+                        
+                    case 'geminiAi':
+                        console.log('🤖 Using Gemini AI method');
+                        const geminiResult = (Math.random() * 9 + 1).toFixed(2) + "x";
+                        resolve(geminiResult);
+                        break;
+                        
+                    case 'deepseekAi':
+                        console.log('🤖 Using Deepseek AI method');
+                        const deepseekResult = (Math.random() * 9 + 1).toFixed(2) + "x";
+                        resolve(deepseekResult);
+                        break;
+                        
+                    case 'api':
+                        console.log('🔗 Using API method');
+                        const apiResult = (Math.random() * 9 + 1).toFixed(2) + "x";
+                        resolve(apiResult);
+                        break;
+                        
+                    default:
+                        console.log('🔧 Using default method');
+                        const defaultResult = (Math.random() * 9 + 1).toFixed(2) + "x";
+                        resolve(defaultResult);
+                }
+            } catch (error) {
+                console.error('❌ Error in getPrediction:', error);
+                reject(error);
+            }
+        });
+    }
+
+    // Helper function to get next item in sequential order
+    function getNextItemSequential(items, type) {
+        const storageKey = `${type}Index`;
+        let currentIndex = parseInt(sessionStorage.getItem(storageKey)) || 0;
+        
+        console.log(`📊 ${type} - Current index:`, currentIndex, 'Total items:', items.length);
+        
+        // Ensure index is within bounds
+        if (currentIndex >= items.length) {
+            currentIndex = 0;
+        }
+        
+        const selectedItem = items[currentIndex];
+        
+        // Move to next index (circular)
+        currentIndex = (currentIndex + 1) % items.length;
+        sessionStorage.setItem(storageKey, currentIndex);
+        
+        console.log(`📊 ${type} - Next index:`, currentIndex);
+        
+        return selectedItem;
+    }
+
+    // Show helpline menu
+    function showHelplineMenu(pageType) {
+        const settings = pageType === 'login' ? helplineSettings.login : helplineSettings.home;
+        
+        let enabledCount = 0;
+
+        if (settings.whatsapp.enabled) {
+            whatsappOption.style.display = 'block';
+            whatsappOption.href = settings.whatsapp.link;
+            enabledCount++;
+        } else {
+            whatsappOption.style.display = 'none';
+            whatsappOption.href = '#'; 
+        }
+
+        if (settings.telegram.enabled) {
+            telegramOption.style.display = 'block';
+            telegramOption.href = settings.telegram.link;
+            enabledCount++;
+        } else {
+            telegramOption.style.display = 'none';
+            telegramOption.href = '#';
+        }
+
+        if (settings.phone.enabled) {
+            phoneOption.style.display = 'block';
+            const link = `tel:${settings.phone.number || ''}`; 
+            phoneOption.href = link;
+            phoneOption.innerHTML = '<i class="fas fa-phone"></i> Call'; 
+            enabledCount++;
+        } else {
+            phoneOption.style.display = 'none';
+            phoneOption.href = '#';
+        }
+        
+        if (enabledCount === 0) {
+            helplineMenu.style.display = 'none'; 
+        } else {
+            helplineMenu.style.display = 'flex';
+        }
+    }
+
+    // Show About Us page
+    function showAboutUsPage() {
+        loginPage.style.display = 'none';
+        aboutUsPage.style.display = 'flex';
+        
+        database.ref('aboutUsSettings').once('value').then(snapshot => {
+            const data = snapshot.val();
+            
+            let content = aboutUsText;
+            
+            if (data && data.content) {
+                content = data.content;
+                aboutUsText = data.content;
+            }
+
+            aboutUsMessages.innerHTML = `<p>${content}</p>`;
+
+        }).catch(() => {
+            aboutUsMessages.innerHTML = `<p>${aboutUsText}</p>`;
+        });
+    }
+
+    // Show notification
+    function showNotification(message) {
+        notification.textContent = message;
+        notification.style.display = 'block';
+
+        setTimeout(() => {
+            notification.style.display = 'none';
+        }, 3000);
+    }
+
+    // Logout function
+    function logout() {
+        clearInterval(timerInterval);
+        clearInterval(countdownInterval);
+        
+        mainApp.style.display = 'none';
+        loginPage.style.display = 'flex';
+        
+        document.getElementById('accessKey').value = '';
+        accessKeyInput.style.borderColor = '#333'; // Reset input border on logout
+        currentKey = null;
+        keyExpiry = null;
+        
+        demoModeActive = false;
+
+        toggleCircleBlur(false);
+        toggleCircleAnimation(false);
+
+        timerDisplay.textContent = '00:00:00';
+        
+        nextButton.disabled = false;
+        nextButton.querySelector('.button-text').textContent = 'Next';
+        nextButton.querySelector('.button-text').style.display = 'block';
+        nextButton.querySelector('.countdown-text').style.display = 'none';
+        
+        circleDisplay.innerHTML = '<div class="message-text"><p></p></div>';
+    }
+
+    // Load settings from Firebase
+    function loadSettings() {
+        database.ref('settings').once('value').then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                settings = { ...settings, ...data };
+            }
+        });
+
+        database.ref('helplineSettings').once('value').then(snapshot => { 
+            const data = snapshot.val();
+            if (data) {
+                helplineSettings.login = { ...helplineSettings.login, ...data.login };
+                helplineSettings.home = { ...helplineSettings.home, ...data.home };
+                if (data.login && data.login.messenger) helplineSettings.login.phone = data.login.messenger;
+                if (data.home && data.home.messenger) helplineSettings.home.phone = data.home.messenger;
+            }
+        });
+
+        database.ref('aboutUsSettings').once('value').then(snapshot => {
+            const data = snapshot.val();
+            if (data && data.content) {
+                aboutUsText = data.content;
+            }
+        });
+
+        // Load prediction settings initially
+        database.ref('predictionSettings').once('value').then(snapshot => {
+            const data = snapshot.val();
+            if (data) {
+                predictionSettings.method = data.method || 'message';
+                predictionSettings.customResults = Array.isArray(data.customResults) ? data.customResults : [];
+                predictionSettings.customMessages = Array.isArray(data.customMessages) ? data.customMessages : [];
+                predictionSettings.apiKey = data.apiKey || '';
+                predictionSettings.deepseekApiKey = data.deepseekApiKey || '';
+                predictionSettings.pattern = data.pattern || 'sequential';
+                
+                console.log('✅ Initial prediction settings loaded:', predictionSettings);
+            }
+        });
+    }
+</script>
+</body>
+</html>

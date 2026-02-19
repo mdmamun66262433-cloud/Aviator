@@ -1,2 +1,0 @@
-# Aviator
-Predictor
